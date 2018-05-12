@@ -1,4 +1,5 @@
 ﻿using Msi.FluentEmail;
+using Msi.FluentEmail.Extensions;
 using System;
 
 namespace FluentEmailExample
@@ -8,12 +9,12 @@ namespace FluentEmailExample
         static void Main(string[] args)
         {
             IFluentEmail fluentEmail = new FluentEmail();
-            fluentEmail.Emailer
+            fluentEmail.NewMessage()
                     .Subject("Hello Subject")
                     .To("shahidcse6@gmail.com")
                     .Body("Hello World!")
                     .Sender("SenderName", "sender@gmail.com", "123456")
-                    .UseSmtpServer("smtp.gmail.com", 587)
+                    .UseGoogleServer(ServerType.Smtp)
                     .Send();
             Console.ReadLine();
         }

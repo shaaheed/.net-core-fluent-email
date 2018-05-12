@@ -11,7 +11,7 @@ using System.Threading.Tasks;
 
 namespace Msi.FluentEmail
 {
-    public class FluentEmailer : IFluentEmailer
+    public class ComposedMessage : IComposedMessage
     {
 
         private MimeMessage _message = new MimeMessage();
@@ -20,40 +20,41 @@ namespace Msi.FluentEmail
         private string _senderEmail = null;
         private string _senderName = null;
         private string _senderPassword = null;
-        private string _smtpServer = null;
-        private int _smtpPort = 0;
+        private string _server = null;
+        private int _port = 0;
+        private ServerType _serverType = ServerType.Smtp;
 
-        public IFluentEmailer From(string name, string email)
+        public IComposedMessage From(string name, string email)
         {
             _message.From.Add(new MailboxAddress(name, email));
             return this;
         }
 
-        public IFluentEmailer To(string email)
+        public IComposedMessage To(string email)
         {
             _message.To.Add(new MailboxAddress(string.Empty, email));
             return this;
         }
 
-        public IFluentEmailer To(IEnumerable<string> emails)
+        public IComposedMessage To(IEnumerable<string> emails)
         {
             AddMultipleTo(emails);
             return this;
         }
 
-        public IFluentEmailer To(params string[] emails)
+        public IComposedMessage To(params string[] emails)
         {
             AddMultipleTo(emails);
             return this;
         }
 
-        public IFluentEmailer Subject(string subject)
+        public IComposedMessage Subject(string subject)
         {
             _message.Subject = subject;
             return this;
         }
 
-        public IFluentEmailer Attach(string name, string base64)
+        public IComposedMessage Attach(string name, string base64)
         {
             if (_multipart == null)
             {
@@ -73,13 +74,13 @@ namespace Msi.FluentEmail
             return this;
         }
 
-        public IFluentEmailer Body(string content)
+        public IComposedMessage Body(string content)
         {
             _body = new TextPart(TextFormat.Html) { Text = content };
             return this;
         }
 
-        public IFluentEmailer Sender(string name, string email, string password)
+        public IComposedMessage Sender(string name, string email, string password)
         {
             _senderName = name;
             _senderEmail = email;
@@ -87,27 +88,29 @@ namespace Msi.FluentEmail
             return From(name, email);
         }
 
-        public IFluentEmailer UseSmtpServer(string smtpServer, int smtpPort)
+        public IComposedMessage UseServer(ServerType serverType, string smtpServer, int smtpPort)
         {
-            _smtpServer = smtpServer;
-            _smtpPort = smtpPort;
+            _serverType = serverType;
+            _server = smtpServer;
+            _port = smtpPort;
             return this;
         }
 
         public async Task Send()
         {
-            using (var client = new SmtpClient())
+            switch (_serverType)
             {
-                var credentials = new NetworkCredential
-                {
-                    UserName = _senderEmail,
-                    Password = _senderPassword
-                };
-                await client.ConnectAsync(_smtpServer, _smtpPort, SecureSocketOptions.Auto).ConfigureAwait(false);
-                await client.AuthenticateAsync(credentials).ConfigureAwait(false);
-                PrepareBody();
-                await client.SendAsync(_message).ConfigureAwait(false);
-                await client.DisconnectAsync(true).ConfigureAwait(false);
+                case ServerType.Smtp:
+                    using (var client = new SmtpClient())
+                    {
+                        var credentials = new NetworkCredential { UserName = _senderEmail, Password = _senderPassword };
+                        await client.ConnectAsync(_server, _port, SecureSocketOptions.Auto).ConfigureAwait(false);
+                        await client.AuthenticateAsync(credentials).ConfigureAwait(false);
+                        PrepareBody();
+                        await client.SendAsync(_message).ConfigureAwait(false);
+                        await client.DisconnectAsync(true).ConfigureAwait(false);
+                    }
+                    break;
             }
         }
 

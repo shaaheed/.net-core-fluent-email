@@ -2,8 +2,9 @@
 {
     public class FluentEmail : IFluentEmail
     {
-        public IFluentEmailer Emailer {
-            get { return new FluentEmailer(); }
+        public IComposedMessage NewMessage()
+        {
+            return new ComposedMessage();
         }
     }
 }

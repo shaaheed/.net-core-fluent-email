@@ -3,7 +3,7 @@
     public interface IFluentEmail
     {
 
-        IFluentEmailer Emailer { get; }
+        IComposedMessage NewMessage();
 
     }
 }
